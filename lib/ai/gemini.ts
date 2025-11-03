@@ -4,7 +4,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 export interface ResumeAnalysis {
   score: number;
-  scores: Record<string, number>; // ✅ dynamic keys instead of fixed schema
+  scores: Record<string, number>;
   summary: string;
   highlights: string[];
 }
@@ -16,17 +16,14 @@ export async function analyzeResume(
 ): Promise<ResumeAnalysis> {
   const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-  // 🧠 Format criteria list for both readability and AI consistency
-  const criteriaList = criteria
-    .map(c => `- ${c.name} (${c.weight}%)`)
-    .join("\n");
+  // Format criteria for consistency
+  const criteriaList = criteria.map(c => `- ${c.name} (${c.weight}%)`).join("\n");
+  const criteriaJSONExample = criteria.map(c => `    "${c.name}": 0`).join(",\n");
 
-  const criteriaJSONExample = criteria
-    .map(c => `    "${c.name}": 0`)
-    .join(",\n");
-
-  // 💬 Dynamic & tolerant prompt
-  const prompt = `You are an expert recruiter and AI evaluator. Analyze the following resume against the job description and the provided scoring criteria.
+  // 🧠 Context-aware, job-agnostic reasoning prompt
+  const prompt = `You are an expert recruiter and evaluation system.
+Analyze the following resume against the job description and scoring criteria.
+Use contextual reasoning — evaluate each criterion relative to the job’s field, not in isolation.
 
 JOB DESCRIPTION:
 ${jobDescription}
@@ -37,17 +34,24 @@ ${criteriaList}
 RESUME TEXT:
 ${resumeText}
 
-Provide a structured evaluation that includes:
-1. An overall score from 0–10 (decimals allowed, e.g. 8.4)
-2. A "scores" object with one numeric score (0–10) per criterion, using the exact same names as in the list above.
-   - If a criterion does not apply or lacks sufficient info, estimate it based on related context rather than leaving it at 0.
-   - Always include all criteria keys.
-3. A concise summary (2–3 sentences)
-4. Exactly 5 key highlights or strengths (bullet points)
+Follow these rules carefully:
+- Always consider relevance and evidence.
+- For "Education" or similar criteria, judge how related the field of study or certifications are to the job domain.
+- For "Skills" or "Tools" criteria, infer matches even if synonyms or equivalent technologies appear.
+- For "Experience" criteria, weigh both duration and depth of relevant roles or projects.
+- If information is missing or unclear, infer approximate strength from context (titles, achievements, or related mentions).
+- Avoid defaulting to neutral 5.0 values unless truly ambiguous.
+- Ensure all criteria are scored from 0–10 and included in the output.
+
+Return a structured JSON containing:
+1. "score": overall 0–10 average weighted score
+2. "scores": one numeric score (0–10) for each criterion, using the same exact names
+3. "summary": a short 2–3 sentence evaluation
+4. "highlights": exactly 5 concise, factual strengths
 
 ⚠️ IMPORTANT:
-- Respond ONLY with valid JSON (no markdown, no commentary)
-- Use this exact format:
+Respond ONLY with valid JSON (no markdown, no commentary).
+Use this exact format:
 
 {
   "score": 8.5,
@@ -71,12 +75,11 @@ ${criteriaJSONExample}
 
     console.log("Gemini raw response:", text);
 
-    // 🧹 Clean Gemini's response formatting
+    // Clean Gemini's response
     text = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-
     const analysis = JSON.parse(text);
 
-    // ✅ Validate essential structure
+    // Validate and normalize
     if (
       typeof analysis.score !== "number" ||
       typeof analysis.scores !== "object" ||
@@ -86,35 +89,29 @@ ${criteriaJSONExample}
       throw new Error("Invalid Gemini response format");
     }
 
-    // 🛠 Normalize missing/misaligned criteria keys
+    // Fill missing criteria safely
     criteria.forEach(c => {
-      const key = c.name;
-      if (typeof analysis.scores[key] !== "number") {
-        analysis.scores[key] = 5; // neutral fallback if missing or invalid
+      if (typeof analysis.scores[c.name] !== "number") {
+        analysis.scores[c.name] = 5;
       }
     });
 
-    // 🧮 Normalize score range to 0–10 (prevent weird outputs)
+    // Clamp values 0–10
     Object.keys(analysis.scores).forEach(k => {
-      const val = analysis.scores[k];
-      analysis.scores[k] = Math.min(10, Math.max(0, Number(val) || 0));
+      const val = Number(analysis.scores[k]);
+      analysis.scores[k] = Math.min(10, Math.max(0, val || 0));
     });
 
-    // ✅ Return final sanitized analysis
     return analysis;
   } catch (error: any) {
     console.error("Error analyzing resume with Gemini:", error);
     if (error.message?.includes("API key")) {
-      throw new Error(
-        "Invalid Gemini API key. Please check your GEMINI_API_KEY in .env.local"
-      );
+      throw new Error("Invalid Gemini API key. Check GEMINI_API_KEY in .env.local");
     }
     if (error.message?.includes("quota") || error.message?.includes("rate limit")) {
       throw new Error("Gemini API rate limit exceeded. Please try again later.");
     }
-    throw new Error(
-      `Gemini AI error: ${error.message || "Failed to analyze resume"}`
-    );
+    throw new Error(`Gemini AI error: ${error.message || "Failed to analyze resume"}`);
   }
 }
 
