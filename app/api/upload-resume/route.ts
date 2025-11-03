@@ -10,9 +10,9 @@ export const runtime = "nodejs";
 
 // Timeout wrapper for safety
 async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  return Promise.race([
+  return Promise.race<T>([
     promise,
-    new Promise((_, reject) =>
+    new Promise<never>((_, reject) =>
       setTimeout(() => reject(new Error("File processing timeout")), ms)
     ),
   ]);
