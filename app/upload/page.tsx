@@ -1,11 +1,12 @@
 'use client';
+export const dynamic = "force-dynamic";
 
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Upload as UploadIcon, X, FileText } from 'lucide-react';
 import { UploadedFile } from '../types';
 
-export default function Upload() {
+export default function UploadContent() {
   const searchParams = useSearchParams();
   const jobId = searchParams.get('jobId');
   
