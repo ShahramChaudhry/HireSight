@@ -127,15 +127,7 @@ export async function POST(request: NextRequest) {
         const val = ((scores[c.name] as number) || 0) * scoreScale;
         return sum + val * ((c.weight || 0) / totalWeight);
       }, 0) || 0;
-    const totalScore =
-      jobCriteria.reduce(
-        (sum: number, c: { name: string; weight: number }) => {
-          const val = (scores[c.name] as number) || 0;
-          return sum + val * (c.weight / 100);
-        },
-        0
-      ) || 0;
-
+    
     // 📝 Create candidate record
     const candidate = await Candidate.create({
       name: candidateInfo.name,
