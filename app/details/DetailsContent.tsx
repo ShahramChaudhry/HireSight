@@ -1,10 +1,9 @@
 'use client';
 export const dynamic = "force-dynamic";
 
-
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Download, ArrowRight, Check } from 'lucide-react';
+import { ArrowRight, Check } from 'lucide-react';
 import { Candidate } from '../types';
 
 export default function DetailsContent() {
@@ -12,7 +11,7 @@ export default function DetailsContent() {
   const candidateId = searchParams.get('candidateId');
   
   const [candidate, setCandidate] = useState<Candidate | null>(null);
-  const [jobTitle, setJobTitle] = useState<string>(''); // ✅ dynamically fetched
+  const [jobTitle, setJobTitle] = useState<string>(''); 
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -29,7 +28,7 @@ export default function DetailsContent() {
         const fetchedCandidate = { ...data.data, id: data.data._id };
         setCandidate(fetchedCandidate);
 
-        // ✅ fetch job title using jobId from candidate
+        // Fetch related job title
         if (fetchedCandidate.jobId) {
           const jobRes = await fetch(`/api/jobs/${fetchedCandidate.jobId}`);
           const jobData = await jobRes.json();
@@ -69,13 +68,11 @@ export default function DetailsContent() {
     );
   }
 
-  const scoreCategories = [
-    { name: 'Technical Skills Match', score: candidate.scores.technicalSkills },
-    { name: 'Years of Experience', score: candidate.scores.experience },
-    { name: 'Education Background', score: candidate.scores.education },
-    { name: 'Project Relevance', score: candidate.scores.projectRelevance },
-    { name: 'Communication Skills', score: candidate.scores.communication },
-  ];
+  // ✅ Dynamically generate score categories from whatever the analyzer saved
+  const scoreCategories = Object.entries(candidate.scores || {}).map(([key, value]) => ({
+    name: key,
+    score: typeof value === 'number' ? value : parseFloat(value) || 0,
+  }));
 
   const getScoreColor = (score: number) => {
     if (score >= 9) return 'bg-green-500';
@@ -84,15 +81,14 @@ export default function DetailsContent() {
     return 'bg-orange-500';
   };
 
-  // ✅ Construct email link with actual job title
-  // ✅ Helper to normalize name case
+  // Helper to format candidate name
   const formatName = (name: string) => {
     if (!name) return '';
     const first = name.split(' ')[0];
     return first.charAt(0).toUpperCase() + first.slice(1).toLowerCase();
   };
 
-  // ✅ Construct email link with actual job title + formatted name
+  // ✅ Construct dynamic email invitation
   const mailtoLink = `mailto:${candidate.email}?subject=${encodeURIComponent(
     `Next Stage: ${jobTitle || 'Interview'} Invitation`
   )}&body=${encodeURIComponent(
@@ -120,7 +116,7 @@ export default function DetailsContent() {
         </div>
       </div>
 
-      {/* Score Breakdown */}
+      {/* Dynamic Score Breakdown */}
       <div className="bg-[#1a1838] border border-gray-800 rounded-xl p-6 space-y-4">
         <h2 className="text-lg font-semibold text-indigo-400">Score Breakdown</h2>
         <div className="space-y-4">
@@ -132,9 +128,7 @@ export default function DetailsContent() {
               </div>
               <div className="relative w-full h-2 bg-gray-800 rounded-full overflow-hidden">
                 <div
-                  className={`absolute left-0 top-0 h-full ${getScoreColor(
-                    category.score
-                  )} transition-all duration-500`}
+                  className={`absolute left-0 top-0 h-full ${getScoreColor(category.score)} transition-all duration-500`}
                   style={{ width: `${category.score * 10}%` }}
                 />
               </div>
@@ -162,20 +156,13 @@ export default function DetailsContent() {
         </ul>
       </div>
 
-      {/* Action Buttons */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Download CV */}
-        <button className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
-          <Download size={20} />
-          Download CV
-        </button>
-
-        {/* ✅ Move to Next Stage */}
+      {/* ✅ Action Button (Centered, Download removed) */}
+      <div className="flex justify-center">
         <a
           href={mailtoLink}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+          className="flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white px-8 py-4 rounded-lg font-medium transition-colors"
         >
           Move to Next Stage
           <ArrowRight size={20} />

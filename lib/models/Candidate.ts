@@ -1,4 +1,4 @@
-import mongoose, { Schema, model, models } from 'mongoose';
+import mongoose, { Schema, model, models } from "mongoose";
 
 export interface ICandidate {
   _id?: string;
@@ -7,13 +7,8 @@ export interface ICandidate {
   phone?: string;
   score: number;
   jobId: string;
-  scores: {
-    technicalSkills: number;
-    experience: number;
-    education: number;
-    projectRelevance: number;
-    communication: number;
-  };
+  // ✅ Dynamic scoring: no fixed keys
+  scores: Record<string, number>;
   summary: string;
   highlights: string[];
   cvUrl?: string;
@@ -26,12 +21,12 @@ const CandidateSchema = new Schema<ICandidate>(
   {
     name: {
       type: String,
-      required: [true, 'Candidate name is required'],
+      required: [true, "Candidate name is required"],
       trim: true,
     },
     email: {
       type: String,
-      required: [true, 'Email is required'],
+      required: [true, "Email is required"],
       trim: true,
       lowercase: true,
     },
@@ -49,13 +44,14 @@ const CandidateSchema = new Schema<ICandidate>(
       type: String,
       required: true,
     },
+
+    // ✅ Replace the fixed 5-field structure with a dynamic Map
     scores: {
-      technicalSkills: { type: Number, required: true, min: 0, max: 10 },
-      experience: { type: Number, required: true, min: 0, max: 10 },
-      education: { type: Number, required: true, min: 0, max: 10 },
-      projectRelevance: { type: Number, required: true, min: 0, max: 10 },
-      communication: { type: Number, required: true, min: 0, max: 10 },
+      type: Map,
+      of: Number,
+      default: {},
     },
+
     summary: {
       type: String,
       required: true,
@@ -76,11 +72,12 @@ const CandidateSchema = new Schema<ICandidate>(
   }
 );
 
-// Index for faster queries
+// Indexes for optimized queries
 CandidateSchema.index({ jobId: 1, score: -1 });
 CandidateSchema.index({ email: 1 });
 
-const Candidate = models.Candidate || model<ICandidate>('Candidate', CandidateSchema);
+// Prevent overwrite model issues in Next.js hot reload
+const Candidate =
+  models.Candidate || model<ICandidate>("Candidate", CandidateSchema);
 
 export default Candidate;
-
