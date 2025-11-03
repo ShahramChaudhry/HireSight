@@ -107,8 +107,9 @@ export async function POST(request: NextRequest) {
     };
     
     // Map dynamic criteria to fixed schema
-    jobCriteria.forEach((criterion, index) => {
+    jobCriteria.forEach((criterion: { name: string; weight: number }) => {
       const name = criterion.name.toLowerCase();
+    
       if (name.includes('technical') || name.includes('skill')) {
         scores.technicalSkills = analysis.scores.technicalSkills || 0;
       } else if (name.includes('experience') || name.includes('year')) {
