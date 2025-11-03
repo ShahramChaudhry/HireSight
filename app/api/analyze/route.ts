@@ -95,6 +95,16 @@ export async function POST(request: NextRequest) {
       throw new Error(`AI analysis failed: ${error.message}`);
     }
 
+    // 🧩 Post-processing safety layer
+    // Guarantee all criteria keys exist with numeric values
+    jobCriteria.forEach((c: { name: string }) => {
+      const key = c.name;
+      if (typeof analysis.scores[key] !== "number") {
+        console.warn(`Missing score for criterion "${key}", assigning neutral 5`);
+        analysis.scores[key] = 5;
+      }
+    });
+
     // 🧩 Dynamically build scores from criteria names
     const scores: Record<string, number> = {};
     for (const criterion of jobCriteria) {
@@ -103,16 +113,18 @@ export async function POST(request: NextRequest) {
       scores[key] =
         analysis.scores?.[key] ??
         analysis.scores?.[key.toLowerCase()] ??
-        0;
+        5; // neutral fallback
     }
 
     // 🧮 Compute weighted total score
-    // 🧮 Compute weighted total score
     const totalScore =
-    jobCriteria.reduce((sum: number, c: { name: string; weight: number }) => {
-      const val = (scores[c.name] as number) || 0;
-      return sum + val * (c.weight / 100);
-    }, 0) || 0;
+      jobCriteria.reduce(
+        (sum: number, c: { name: string; weight: number }) => {
+          const val = (scores[c.name] as number) || 0;
+          return sum + val * (c.weight / 100);
+        },
+        0
+      ) || 0;
 
     // 📝 Create candidate record
     const candidate = await Candidate.create({
