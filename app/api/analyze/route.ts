@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check for API key
+    // ✅ Check for API key
     if (!process.env.GEMINI_API_KEY) {
       console.error("GEMINI_API_KEY not set in environment variables");
       return NextResponse.json(
@@ -109,36 +109,31 @@ export async function POST(request: NextRequest) {
     const scores: Record<string, number> = {};
     for (const criterion of jobCriteria) {
       const key = criterion.name.trim();
-      // Try to map using exact name or fallback to normalized lowercase key
       scores[key] =
         analysis.scores?.[key] ??
         analysis.scores?.[key.toLowerCase()] ??
         5; // neutral fallback
     }
 
-    // 🧮 Compute weighted total score
-
-    // Then compute normalized weighted total
-    // 🧮 Compute normalized weighted total
+    // 🧮 Compute weighted total score safely
     const totalWeight =
-    jobCriteria.reduce(
-      (sum: number, c: { name: string; weight: number }) => sum + (c.weight || 0),
-      0
-    ) || 100;
+      jobCriteria.reduce(
+        (sum: number, c: { weight: number }) => sum + (c.weight || 0),
+        0
+      ) || 100;
 
-    // Detect if Gemini returned scores on 0–1 scale instead of 0–10
-    // Detect if Gemini returned 0–1 scale instead of 0–10
-    const avgScore =
-    Object.values(scores).reduce((a, b) => a + Number(b || 0), 0) /
-    jobCriteria.length;
-    const scoreScale = avgScore <= 1.0 ? 10 : 1;
+    let totalScore = 0;
+    for (const c of jobCriteria) {
+      const rawVal = scores[c.name];
+      const val = Number(rawVal);
+      if (!isNaN(val)) {
+        totalScore += val * ((c.weight || 0) / totalWeight);
+      }
+    }
 
-    const totalScore =
-    jobCriteria.reduce((sum: number, c: { name: string; weight: number }) => {
-      const val = Number(scores[c.name]) * scoreScale;
-      return sum + val * ((c.weight || 0) / totalWeight);
-    }, 0);
-    
+    // ✅ Clamp between 0–10 and round to 2 decimals
+    totalScore = Math.max(0, Math.min(10, Number(totalScore.toFixed(2))));
+
     // 📝 Create candidate record
     const candidate = await Candidate.create({
       name: candidateInfo.name,
