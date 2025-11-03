@@ -116,11 +116,16 @@ export async function POST(request: NextRequest) {
     }
 
     // 🧮 Compute weighted total score safely
-    const totalWeight =
-      jobCriteria.reduce(
-        (sum: number, c: { weight: number }) => sum + (c.weight || 0),
-        0
-      ) || 100;
+    // 🧮 Compute weighted total score safely
+    let totalWeight = jobCriteria.reduce(
+      (sum: number, c: { weight: number }) => sum + (c.weight || 0),
+      0
+    );
+
+    // If weights look like percentages (sum ~100), normalize to 1
+    if (totalWeight > 1.5) {
+      totalWeight = totalWeight / 100;
+    }
 
     let totalScore = 0;
     for (const c of jobCriteria) {
@@ -131,7 +136,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // ✅ Clamp between 0–10 and round to 2 decimals
+    // ✅ Clamp between 0–10 and round
     totalScore = Math.max(0, Math.min(10, Number(totalScore.toFixed(2))));
 
     // 📝 Create candidate record
