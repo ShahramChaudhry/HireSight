@@ -21,52 +21,50 @@ export async function analyzeResume(
   const criteriaJSONExample = criteria.map(c => `    "${c.name}": 0`).join(",\n");
 
   // 🧠 Context-aware, job-agnostic reasoning prompt
-  const prompt = `You are an expert recruiter and evaluation system.
-Analyze the following resume against the job description and scoring criteria.
-Use contextual reasoning — evaluate each criterion relative to the job’s field, not in isolation.
-
-JOB DESCRIPTION:
-${jobDescription}
-
-SCORING CRITERIA:
-${criteriaList}
-
-RESUME TEXT:
-${resumeText}
-
-Follow these rules carefully:
-- Always consider relevance and evidence.
-- For "Education" or similar criteria, judge how related the field of study or certifications are to the job domain.
-- For "Skills" or "Tools" criteria, infer matches even if synonyms or equivalent technologies appear.
-- For "Experience" criteria, weigh both duration and depth of relevant roles or projects.
-- If information is missing or unclear, infer approximate strength from context (titles, achievements, or related mentions).
-- Avoid defaulting to neutral 5.0 values unless truly ambiguous.
-- Ensure all criteria are scored from 0–10 and included in the output.
-
-Return a structured JSON containing:
-1. "score": overall 0–10 average weighted score
-2. "scores": one numeric score (0–10) for each criterion, using the same exact names
-3. "summary": a short 2–3 sentence evaluation
-4. "highlights": exactly 5 concise, factual strengths
-
-⚠️ IMPORTANT:
-Respond ONLY with valid JSON (no markdown, no commentary).
-Use this exact format:
-
-{
-  "score": 8.5,
-  "scores": {
-${criteriaJSONExample}
-  },
-  "summary": "Concise explanation of performance relative to criteria.",
-  "highlights": [
-    "Specific quantified strength 1",
-    "Specific quantified strength 2",
-    "Specific quantified strength 3",
-    "Specific quantified strength 4",
-    "Specific quantified strength 5"
-  ]
-}`;
+  const prompt = `You are an expert recruiter and AI evaluator.
+  Analyze the following resume against the provided job description and scoring criteria.
+  
+  Your goal is to reason contextually — evaluate each criterion based on evidence and relevance to the job's domain.
+  
+  JOB DESCRIPTION:
+  ${jobDescription}
+  
+  SCORING CRITERIA:
+  ${criteriaList}
+  
+  RESUME TEXT:
+  ${resumeText}
+  
+  Follow these reasoning rules:
+  - Always ground your analysis in the job description context.
+  - For **Education** or similar criteria:
+    • Evaluate how relevant the candidate's degree, major, or field of study is to the job role or industry.
+    • If the degree directly matches (e.g., "Computer Science" for a Software Engineer, "Marketing" for a Marketing role), score high (8–10).
+    • If somewhat related (e.g., "Business Administration" for a Marketing job), score moderate (5–7).
+    • If unrelated or unclear, score low (2–4).
+    • Do not give a neutral 5 unless there is absolutely no information.
+  - For **Skills / Tools** criteria, match both exact tools and synonyms or equivalents (e.g., "Photoshop" counts for "Design Tools").
+  - For **Experience** criteria, consider both duration and relevance to the job duties.
+  - For **Soft Skills** (communication, teamwork, creativity), look for indirect evidence like group projects, presentations, or leadership roles.
+  - When information is missing, infer from context — job titles, achievements, or domain hints.
+  - Every criterion must be scored (0–10); never omit keys or leave them all equal.
+  
+  Return valid JSON in the following exact structure (no markdown, no commentary):
+  
+  {
+    "score": 8.5,
+    "scores": {
+  ${criteriaJSONExample}
+    },
+    "summary": "Concise explanation of performance relative to criteria.",
+    "highlights": [
+      "Specific quantified strength 1",
+      "Specific quantified strength 2",
+      "Specific quantified strength 3",
+      "Specific quantified strength 4",
+      "Specific quantified strength 5"
+    ]
+  }`;
 
   try {
     const result = await model.generateContent(prompt);
