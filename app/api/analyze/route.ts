@@ -127,19 +127,17 @@ export async function POST(request: NextRequest) {
     ) || 100;
 
     // Detect if Gemini returned scores on 0–1 scale instead of 0–10
+    // Detect if Gemini returned 0–1 scale instead of 0–10
     const avgScore =
-    Object.values(scores).reduce((a: number, b: number) => a + (b || 0), 0) /
+    Object.values(scores).reduce((a, b) => a + Number(b || 0), 0) /
     jobCriteria.length;
-    const scoreScale = avgScore <= 1.0 ? 10 : 1; // if average <1, multiply all by 10
+    const scoreScale = avgScore <= 1.0 ? 10 : 1;
 
     const totalScore =
-    jobCriteria.reduce(
-      (sum: number, c: { name: string; weight: number }) => {
-        const val = ((scores[c.name] as number) || 0) * scoreScale;
-        return sum + val * ((c.weight || 0) / totalWeight);
-      },
-      0
-    ) || 0;
+    jobCriteria.reduce((sum: number, c: { name: string; weight: number }) => {
+      const val = Number(scores[c.name]) * scoreScale;
+      return sum + val * ((c.weight || 0) / totalWeight);
+    }, 0);
     
     // 📝 Create candidate record
     const candidate = await Candidate.create({
