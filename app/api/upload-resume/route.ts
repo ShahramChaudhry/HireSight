@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     if (fileName.endsWith(".pdf")) {
       console.log("📘 Using pdf-extraction for:", fileName);
       const pdf = require("pdf-extraction");
-      const data = await withTimeout(pdf(buffer), 20000);
+      const data = (await withTimeout(pdf(buffer), 20000)) as { text: string };
       resumeText = data.text;
     } else if (fileName.endsWith(".docx")) {
       console.log("📗 Using mammoth for:", fileName);
