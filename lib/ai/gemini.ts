@@ -37,18 +37,18 @@ ${resumeText}
 
 Follow these reasoning rules:
 - Always ground your analysis in the job description context.
-- For "Education" or similar criteria:
-  • Evaluate how relevant the candidate's degree, major, or field of study is to the job role or industry.
-  • If the degree directly matches (e.g., "Computer Science" for a Software Engineer, "Marketing" for a Marketing role), score high (8–10).
-  • If somewhat related (e.g., "Business Administration" for a Marketing job), score moderate (5–7).
-  • If unrelated or unclear, score low (2–4).
-  • Do not give a neutral 5 unless there is absolutely no information.
-- For "Skills" or "Tools" criteria, match both exact tools and synonyms or equivalents (e.g., "Photoshop" counts for "Design Tools").
-- For "Experience" criteria, consider both duration and relevance to the job duties.
-- For "Soft Skills" (communication, teamwork, creativity, leadership), look for indirect evidence like group projects, presentations, or collaboration examples.
-- When information is missing, infer from context — job titles, achievements, or domain hints.
-- Every criterion must be scored (0–10); never omit keys or make all scores equal.
-- Ensure that all reasoning reflects *how relevant* each attribute is to this specific job domain.
+- **Be critical and evidence-based** — do not assume competence without proof.
+- For each criterion:
+  • Score **8–10** only if the resume provides clear, strong, *specific* evidence.  
+  • Score **5–7** if the resume shows partial or moderate relevance.  
+  • Score **2–4** if evidence is weak or tangential.  
+  • Score **0–1** only when the resume lacks any indication for that criterion.
+- For “Education”, judge relevance of the degree or field, not just its presence.
+- For “Skills/Tools”, accept synonyms or equivalent tools.
+- For “Experience”, consider both duration and *specific relevance* to the job.
+- For “Soft Skills”, look for hints (e.g., teamwork, presentations, projects).
+- **Avoid giving 10.0 unless the resume clearly demonstrates exceptional mastery.**
+- Every criterion must be scored (0–10); never leave all equal.
 
 Respond ONLY with valid JSON — no markdown, no commentary, no explanations outside the JSON. 
 Double-check commas, quotation marks, and array syntax before finishing.
