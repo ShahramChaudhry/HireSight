@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ✅ Check for API key
+    // Check for API key
     if (!process.env.GEMINI_API_KEY) {
       console.error("GEMINI_API_KEY not set in environment variables");
       return NextResponse.json(
@@ -95,49 +95,23 @@ export async function POST(request: NextRequest) {
       throw new Error(`AI analysis failed: ${error.message}`);
     }
 
-    // 🧩 Post-processing safety layer
-    // Guarantee all criteria keys exist with numeric values
-    jobCriteria.forEach((c: { name: string }) => {
-      const key = c.name;
-      if (typeof analysis.scores[key] !== "number") {
-        console.warn(`Missing score for criterion "${key}", assigning neutral 5`);
-        analysis.scores[key] = 5;
-      }
-    });
-
     // 🧩 Dynamically build scores from criteria names
     const scores: Record<string, number> = {};
     for (const criterion of jobCriteria) {
       const key = criterion.name.trim();
+      // Try to map using exact name or fallback to normalized lowercase key
       scores[key] =
         analysis.scores?.[key] ??
         analysis.scores?.[key.toLowerCase()] ??
-        5; // neutral fallback
+        0;
     }
 
-    // 🧮 Compute weighted total score safely
-    // 🧮 Compute weighted total score safely
-    let totalWeight = jobCriteria.reduce(
-      (sum: number, c: { weight: number }) => sum + (c.weight || 0),
-      0
-    );
-
-    // If weights look like percentages (sum ~100), normalize to 1
-    if (totalWeight > 1.5) {
-      totalWeight = totalWeight / 100;
-    }
-
-    let totalScore = 0;
-    for (const c of jobCriteria) {
-      const rawVal = scores[c.name];
-      const val = Number(rawVal);
-      if (!isNaN(val)) {
-        totalScore += val * ((c.weight || 0) / totalWeight);
-      }
-    }
-
-    // ✅ Clamp between 0–10 and round
-    totalScore = Math.max(0, Math.min(10, Number(totalScore.toFixed(2))));
+    // 🧮 Compute weighted total score
+    const totalScore =
+      jobCriteria.reduce((sum, c) => {
+        const val = scores[c.name] || 0;
+        return sum + val * (c.weight / 100);
+      }, 0) || 0;
 
     // 📝 Create candidate record
     const candidate = await Candidate.create({
