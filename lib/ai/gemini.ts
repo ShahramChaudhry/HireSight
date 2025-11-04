@@ -103,3 +103,41 @@ ${criteriaJSONExample}
     throw new Error(`Gemini AI error: ${error.message || "Failed to analyze resume"}`);
   }
 }
+
+export async function extractCandidateInfo(resumeText: string): Promise<{
+  name: string;
+  email: string;
+  phone?: string;
+}> {
+  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+  const prompt = `Extract the candidate's contact information from this resume.
+
+RESUME:
+${resumeText}
+
+Respond ONLY with valid JSON:
+{
+  "name": "Full Name",
+  "email": "email@example.com",
+  "phone": "+1 234-567-8900"
+}`;
+
+  try {
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    let text = response.text();
+    text = text.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+    const info = JSON.parse(text);
+    return {
+      name: info.name || "Unknown Candidate",
+      email: info.email || `candidate_${Date.now()}@example.com`,
+      phone: info.phone || undefined,
+    };
+  } catch (error) {
+    console.error("Error extracting candidate info:", error);
+    return {
+      name: "Unknown Candidate",
+      email: `candidate_${Date.now()}@example.com`,
+    };
+  }
+}
