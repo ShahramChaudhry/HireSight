@@ -45,9 +45,12 @@ This caused valid scores to be skipped because the names didn’t match exactly.
 After hours of debugging prompt logic, the fix turned out to be simple: trimming key names before mapping them.
 A small detail, but a huge relief once found!
 
-⸻
 
 ## Reflections
 
 Working on HireSight was genuinely enjoyable, it combined AI, full-stack development, and data interpretation in one project.
 It pushed me to think deeply about prompt design, data consistency, and how small details can break complex systems. Overall, it was a great blend of creativity and problem-solving, and I’m proud of how it turned out.
+
+## Demo
+Deployed App: https://hire-sight-nine.vercel.app￼
+Demo Video: https://drive.google.com/file/d/1khCCBLxjfKEUfywFaVn6dDt8ftG2ldQP/view?usp=sharing
