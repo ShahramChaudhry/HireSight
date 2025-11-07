@@ -97,33 +97,57 @@ export async function POST(request: NextRequest) {
 
     // 🧩 Dynamically build scores from criteria names
     // 🧩 Build normalized score map and log mismatches
-    const scores: Record<string, number> = {};
-    const availableKeys = Object.keys(analysis.scores || {});
-    console.log("🧠 Gemini returned criteria keys:", availableKeys);
+   // 🧠 Normalize Gemini's returned keys (trim spaces + lowercase)
+  const normalizedGeminiScores: Record<string, number> = {};
+  for (const key in analysis.scores) {
+    const cleanKey = key.trim().toLowerCase();
+    normalizedGeminiScores[cleanKey] = analysis.scores[key];
+  }
 
-    for (const criterion of jobCriteria) {
-      const key = criterion.name.trim();
-      const val =
-        analysis.scores?.[key] ??
-        analysis.scores?.[key.toLowerCase()] ??
-        0;
+  const scores: Record<string, number> = {};
+  const availableKeys = Object.keys(normalizedGeminiScores);
+  console.log("🧠 Gemini returned (normalized) criteria keys:", availableKeys);
 
-      if (val === 0 && availableKeys.length > 0) {
-        console.warn(`⚠️ No score found for "${key}" → available keys:`, availableKeys);
-      }
+  for (const criterion of jobCriteria) {
+    const cleanName = criterion.name.trim().toLowerCase();
+    const val = normalizedGeminiScores[cleanName] ?? 0;
 
-      scores[key] = val;
+    if (val === 0) {
+      console.warn(`⚠️ No score found for "${criterion.name}" → available keys:`, availableKeys);
     }
 
+    scores[criterion.name] = val;
+  }
+
+  console.log("✅ Final mapped scores:", scores);
     // 🧩 Log specific key values
     console.log("🔍 Education Background:", scores["Education Background"]);
     console.log("🔍 Marketing Tools & Digital Skills:", scores["Marketing Tools & Digital Skills"]);
     // 🧮 Compute weighted total score
-    const totalScore =
-    jobCriteria.reduce((sum: number, c: { name: string; weight: number }) => {
-      const val = scores[c.name] || 0;
-      return sum + val * (c.weight / 100);
-    }, 0) || 0;
+    // 🧮 Compute weighted total with detailed logging
+      const totalWeight =
+      jobCriteria.reduce((sum: number, c: { weight: number }) => sum + (c.weight || 0), 0) || 100;
+
+      console.log("📊 Starting totalScore calculation...");
+      console.log("Job Criteria:", jobCriteria);
+      console.log("Scores object:", scores);
+      console.log("Total Weight:", totalWeight);
+
+      let debugSum = 0;
+
+      for (const c of jobCriteria) {
+      const rawScore = scores[c.name];
+      const weight = c.weight || 0;
+      const contribution = (rawScore || 0) * (weight / totalWeight);
+      console.log(
+        `➡️ ${c.name}: score=${rawScore} × weight=${weight} / totalWeight=${totalWeight} = ${contribution.toFixed(2)}`
+      );
+      debugSum += contribution;
+      }
+
+      const totalScore = debugSum;
+
+      console.log("✅ Weighted total (normalized to 0–10 scale):", totalScore.toFixed(2));
 
     // 📝 Create candidate record
     const candidate = await Candidate.create({
