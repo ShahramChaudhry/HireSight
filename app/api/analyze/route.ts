@@ -96,16 +96,28 @@ export async function POST(request: NextRequest) {
     }
 
     // 🧩 Dynamically build scores from criteria names
+    // 🧩 Build normalized score map and log mismatches
     const scores: Record<string, number> = {};
+    const availableKeys = Object.keys(analysis.scores || {});
+    console.log("🧠 Gemini returned criteria keys:", availableKeys);
+
     for (const criterion of jobCriteria) {
       const key = criterion.name.trim();
-      // Try to map using exact name or fallback to normalized lowercase key
-      scores[key] =
+      const val =
         analysis.scores?.[key] ??
         analysis.scores?.[key.toLowerCase()] ??
         0;
+
+      if (val === 0 && availableKeys.length > 0) {
+        console.warn(`⚠️ No score found for "${key}" → available keys:`, availableKeys);
+      }
+
+      scores[key] = val;
     }
 
+    // 🧩 Log specific key values
+    console.log("🔍 Education Background:", scores["Education Background"]);
+    console.log("🔍 Marketing Tools & Digital Skills:", scores["Marketing Tools & Digital Skills"]);
     // 🧮 Compute weighted total score
     const totalScore =
     jobCriteria.reduce((sum: number, c: { name: string; weight: number }) => {
